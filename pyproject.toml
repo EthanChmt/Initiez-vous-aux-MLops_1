@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "initiez_vous_aux_mlops_1"
+version = "0.1.0"
+description = "Projet de scoring crédit pour Prêt à dépenser"
+authors = ["EthanChmt <ethan.chaumeret@gmail.com>"]
+readme = "README.md"
+packages = [{include = "initiez_vous_aux_mlops_1", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11.9"
+pandas = "*"
+numpy = "*"
+scikit-learn = "*"
+mlflow = "*"
+lightgbm = "*"
+imbalanced-learn = "*"
+fastapi = "*"
+uvicorn = "*"
+seaborn = "^0.13.2"
+notebook = "^7.5.3"
+ipykernel = "^7.1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+ruff = "*"
+ipykernel = "^7.1.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

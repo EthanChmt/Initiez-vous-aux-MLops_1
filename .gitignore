@@ -1,0 +1,24 @@
+# Données
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Environnement Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.env
+build/
+dist/
+
+# MLFlow & Logs
+mlruns/
+mlflow_logs/
+.pytest_cache/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
