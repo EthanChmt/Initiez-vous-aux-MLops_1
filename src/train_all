@@ -1,0 +1,127 @@
+import os
+import logging
+import warnings
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
+import mlflow
+import mlflow.sklearn
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_split
+from sklearn.metrics import (make_scorer, roc_auc_score, roc_curve, auc, 
+                             balanced_accuracy_score, confusion_matrix, ConfusionMatrixDisplay)
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
+
+# import des outils
+from model_utils import load_data, custom_business_cost
+
+# Configuration
+warnings.filterwarnings("ignore", category=UserWarning)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def get_model_config(model_type):
+    """Définit le pipeline et la grille d'hyperparamètres par modèle."""
+    if model_type == "Logistic_Regression":
+        pipeline = Pipeline([
+            ('imputer', SimpleImputer(strategy='median')),
+            ('scaler', StandardScaler()),
+            ('classifier', LogisticRegression(class_weight='balanced', max_iter=1000, random_state=42))
+        ])
+        param_grid = {'classifier__C': [0.1, 1.0]}
+        
+    elif model_type == "XGBoost":
+        pipeline = Pipeline([
+            ('imputer', SimpleImputer(strategy='median')),
+            ('classifier', XGBClassifier(scale_pos_weight=11, random_state=42, eval_metric='logloss'))
+        ])
+        param_grid = {'classifier__max_depth': [4, 6], 'classifier__n_estimators': [100]}
+
+    elif model_type == "LightGBM":
+        pipeline = Pipeline([
+            ('imputer', SimpleImputer(strategy='median')),
+            ('classifier', LGBMClassifier(class_weight='balanced', random_state=42, force_col_wise=True))
+        ])
+        param_grid = {'classifier__num_leaves': [31, 50], 'classifier__n_estimators': [100]}
+    
+    return pipeline, param_grid
+
+def run_exhaustive_tuning(sample_size=50000):
+    # 1. Chargement et échantillonnage stratifié (recommandé par le mentor)
+    X_full, y_full = load_data()
+    X, _, y, _ = train_test_split(X_full, y_full, train_size=sample_size, stratify=y_full, random_state=42)
+    
+    # 2. Scorer métier et stratégie de CV
+    biz_scorer = make_scorer(custom_business_cost, greater_is_better=False, needs_proba=True)
+    cv_strategy = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+
+    model_types = ["Logistic_Regression", "XGBoost", "LightGBM"]
+
+    for m_type in model_types:
+        mlflow.set_experiment(f"Tuning_{m_type}")
+        pipeline, param_grid = get_model_config(m_type)
+        
+        with mlflow.start_run(run_name=f"GridSearch_{m_type}_{sample_size}"):
+            # Autologging sans doublon de modèle
+            mlflow.sklearn.autolog(log_models=False, silent=True)
+            
+            # 3. Exécution de la GridSearch
+            grid = GridSearchCV(
+                pipeline, param_grid, cv=cv_strategy, 
+                scoring={'AUC': 'roc_auc', 'Cost': biz_scorer, 'BalAcc': 'balanced_accuracy'},
+                refit='Cost', n_jobs=-1, verbose=1
+            )
+            grid.fit(X, y)
+            
+            # --- CALCUL DES MÉTRIQUES ET ARTEFACTS ---
+            best_model = grid.best_estimator_
+            y_pred = best_model.predict(X)
+            y_proba = best_model.predict_proba(X)[:, 1]
+            
+            # Balanced Accuracy
+            bal_acc = balanced_accuracy_score(y, y_pred)
+            mlflow.log_metric("balanced_accuracy", bal_acc)
+            
+            # Matrice de Confusion (Artefact)
+            fig, ax = plt.subplots(figsize=(6, 6))
+            ConfusionMatrixDisplay.from_predictions(y, y_pred, display_labels=['Sain', 'Défaut'], cmap='Blues', ax=ax)
+            plt.title(f'Matrice de Confusion - {m_type}')
+            cm_path = f"confusion_matrix_{m_type}.png"
+            plt.savefig(cm_path)
+            mlflow.log_artifact(cm_path)
+            plt.close()
+
+            # Courbe ROC (Artefact)
+            fpr, tpr, _ = roc_curve(y, y_proba)
+            roc_auc = auc(fpr, tpr)
+            plt.figure(figsize=(6, 4))
+            plt.plot(fpr, tpr, label=f'AUC = {roc_auc:.4f}')
+            plt.plot([0, 1], 'k--')
+            plt.title(f'ROC Curve - {m_type}')
+            plt.legend()
+            roc_path = f"roc_{m_type}.png"
+            plt.savefig(roc_path)
+            mlflow.log_artifact(roc_path)
+            plt.close()
+
+            # --- REGISTRE DES MODÈLES ---
+            mlflow.sklearn.log_model(
+                best_model, 
+                artifact_path="model",
+                registered_model_name=f"Best_{m_type}_Model"
+            )
+            
+            # Nettoyage fichiers temporaires
+            if os.path.exists(cm_path): os.remove(cm_path)
+            if os.path.exists(roc_path): os.remove(roc_path)
+            
+            logger.info(f"Terminé: {m_type} | Cost: {grid.best_score_:.4f} | BalAcc: {bal_acc:.4f}")
+
+if __name__ == "__main__":
+    run_exhaustive_tuning(sample_size=50000)
