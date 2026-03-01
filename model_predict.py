@@ -2,8 +2,6 @@ import mlflow.pyfunc
 import numpy as np
 import logging
 import warnings
-
-# On importe load_data depuis ton module source
 from src.model_utils import load_data
 
 # Configuration des logs pour une sortie propre
@@ -13,7 +11,7 @@ warnings.filterwarnings("ignore")
 
 def make_predictions_with_champions():
     """
-    Charge les 3 champions depuis le Model Registry et effectue des prédictions.
+    Charge les 3 "champions" depuis le Model Registry et effectue des prédictions.
     """
     try:
         # 1. Chargement des données (Numpy arrays)
@@ -49,7 +47,6 @@ def make_predictions_with_champions():
                 
             except Exception as e:
                 logger.error(f"Erreur lors du traitement de {model_name} : {e}")
-                print("Conseil : Vérifie dans l'UI MLflow que le modèle est bien enregistré avec ce nom exact.")
 
     except Exception as e:
         logger.error(f"Erreur lors du chargement des données : {e}")
