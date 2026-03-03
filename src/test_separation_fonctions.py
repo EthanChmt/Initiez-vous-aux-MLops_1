@@ -13,10 +13,10 @@ from src.model_utils import custom_business_cost
 logger = logging.getLogger(__name__)
 warnings.filterwarnings("ignore", category=UserWarning)
 
-def get_model_config(model_type):
+def pipeline_model(model_type):
     """
     Définit les pipelines et les grilles d'hyperparamètres.
-    Cette fonction est le 'moteur' de tes expérimentations.
+    
     """
     if model_type == "Logistic_Regression":
         pipeline = Pipeline([
@@ -36,7 +36,7 @@ def get_model_config(model_type):
         ])
         param_grid = {
             'classifier__max_depth': [3, 5, 7],
-            'classifier__n_estimators': [50, 100],
+            'classifier__n_estimators': [50, 100, 200],
             'classifier__learning_rate': [0.01, 0.1]
         }
 
@@ -46,7 +46,7 @@ def get_model_config(model_type):
             ('classifier', LGBMClassifier(class_weight='balanced', random_state=42, force_col_wise=True))
         ])
         param_grid = {
-            'classifier__num_leaves': [31, 50],
+            'classifier__num_leaves': [20, 31, 50],
             'classifier__n_estimators': [100, 200],
             'classifier__learning_rate': [0.05, 0.1]
         }

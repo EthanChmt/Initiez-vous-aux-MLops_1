@@ -6,7 +6,7 @@ Ce projet vise à développer un modèle de scoring pour prédire la probabilit�
 Les données utilisées proviennent de la compétition Kaggle : [Home Credit Default Risk](https://www.kaggle.com/c/home-credit-default-risk/data).
 
 ### Installation des données
-1. Téléchargez les fichiers CSV depuis le lien Kaggle ci-dessus.
+1. Telechargez les fichiers CSV depuis le lien Kaggle ci-dessus.
 2. Créez un dossier nommé `data/` à la racine du projet.
 3. Placez-y les fichiers, notamment `application_train.csv`.
 4. Notez que le dossier `data/` est exclu du suivi Git via le fichier `.gitignore`.

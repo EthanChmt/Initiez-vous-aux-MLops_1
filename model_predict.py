@@ -11,35 +11,35 @@ warnings.filterwarnings("ignore")
 
 def make_predictions_with_champions():
     """
-    Charge les 3 "champions" depuis le Model Registry et effectue des prédictions.
+    Charge les 3 'champions' depuis le Model Registry et effectue des prédictions.
+    
     """
     try:
         # 1. Chargement des données (Numpy arrays)
         X_full, _ = load_data()
         
-        # CORRECTION : On utilise le slicing [0:5] car X_full est un numpy.ndarray
+        # Sélection d'un échantillon pour la démonstration
         sample_data = X_full[0:5]
         logger.info(f"Données de test chargées. Taille du sample : {sample_data.shape}")
 
-        # 2. Liste de tes champions enregistrés dans le Registry
-        # Assure-toi que ces noms correspondent exactement à ceux de ton script d'entraînement
+        # 2. Liste des champions (Noms exacts enregistrés dans le notebook)
         champions = [
-            "Credit_Model_Logistic_Regression",
-            "Credit_Model_XGBoost",
-            "Credit_Model_LightGBM"
+            "Champion_Logistic_Regression",
+            "Champion_XGBoost",
+            "Champion_LightGBM"
         ]
         
         for model_name in champions:
             print("-" * 50)
             try:
-                # On vise la version 1 ou le stage "None" (par défaut après registration)
+                # On récupère la version 1 du modèle dans le Registry
                 model_uri = f"models:/{model_name}/1"
-                logger.info(f"Chargement du modèle : {model_name} (v1)...")
+                logger.info(f"Chargement du modèle : {model_name}...")
                 
-                # Chargement du modèle via l'API pyfunc (générique)
+                # Chargement du modèle (inclut les poids/paramètres appris)
                 model = mlflow.pyfunc.load_model(model_uri)
                 
-                # Prédiction
+                # Exécution de la prédiction
                 preds = model.predict(sample_data)
                 
                 print(f"RÉSULTAT pour {model_name}:")
