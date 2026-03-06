@@ -58,9 +58,13 @@ def pipeline_model(model_type):
 def find_best_threshold(y_true, y_proba):
     """
     Identifie le seuil de probabilité qui minimise le coût métier.
-    Réutilisable par n'importe quel script de prédiction ou notebook.
+    Retourne le meilleur seuil, le coût minimal, ainsi que les listes pour le graphique.
     """
     thresholds = np.linspace(0.1, 0.9, 81)
-    costs = [custom_business_cost(y_true, (y_proba >= t).astype(int)) for t in thresholds]
-    best_threshold = thresholds[np.argmin(costs)]
-    return best_threshold, np.min(costs)
+    costs = [custom_business_cost(y_true, y_proba, threshold=t) for t in thresholds]
+    
+    best_idx = np.argmin(costs)
+    best_threshold = thresholds[best_idx]
+    min_cost = costs[best_idx]
+    
+    return best_threshold, min_cost, thresholds, costs
